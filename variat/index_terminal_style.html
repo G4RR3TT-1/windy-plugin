@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Savannah Weather Radar</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <style>
+    :root {
+      --bg-dark: #0c0c0c;
+      --bg-panel: rgba(15, 15, 15, 0.98);
+      --text-primary: #e0e0e0;
+      --text-secondary: #888;
+      --accent: #40f8ff;
+      --border: #1f1f1f;
+      --glow: 0 0 8px var(--accent);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg-dark);
+      color: var(--text-primary);
+      font-family: 'SF Mono', Menlo, Monaco, Consolas, monospace;
+      letter-spacing: 0.02em;
+    }
+
+    #map {
+      width: 100vw;
+      height: 100vh;
+      background: var(--bg-dark);
+    }
+
+    .header, .weather-panel, .radar-timestamp {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      box-shadow: inset 0 0 0 1px #1e1e1e;
+    }
+
+    .header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      z-index: 1000;
+    }
+
+    .location-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .location-title {
+      font-size: 1em;
+      font-weight: 400;
+      color: var(--text-primary);
+      margin-bottom: 2px;
+    }
+
+    .coordinates {
+      font-size: 0.75em;
+      color: var(--text-secondary);
+    }
+
+    .current-time {
+      font-size: 0.85em;
+      color: var(--accent);
+      text-shadow: var(--glow);
+    }
+
+    .weather-panel {
+      position: fixed;
+      top: 70px;
+      right: 20px;
+      padding: 20px;
+      border-radius: 6px;
+      width: 300px;
+      z-index: 1000;
+    }
+
+    .weather-main {
+      margin-bottom: 15px;
+      padding-bottom: 15px;
+      border-bottom: 1px dashed var(--border);
+    }
+
+    .temperature {
+      font-size: 2.2em;
+      color: var(--accent);
+      text-shadow: var(--glow);
+    }
+
+    .condition {
+      color: var(--text-secondary);
+      font-size: 0.85em;
+      margin-top: 4px;
+    }
+
+    .weather-details {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 15px;
+    }
+
+    .detail-item {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .detail-label {
+      color: #666;
+      font-size: 0.75em;
+      letter-spacing: 0.05em;
+    }
+
+    .detail-value {
+      color: #ddd;
+      font-weight: 500;
+    }
+
+    .forecast {
+      display: flex;
+      justify-content: space-between;
+      border-top: 1px dashed var(--border);
+      padding-top: 12px;
+    }
+
+    .forecast-day {
+      text-align: center;
+      font-size: 0.8em;
+      color: var(--text-secondary);
+    }
+
+    .forecast-temp {
+      color: var(--accent);
+      text-shadow: var(--glow);
+      margin-top: 4px;
+    }
+
+    .radar-timestamp {
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 0.75em;
+      color: var(--text-secondary);
+      font-family: 'SF Mono', Menlo, Consolas, monospace;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="location-info">
+      <div class="location-title">Savannah, GA</div>
+      <div class="coordinates">32.0809°N, 81.0912°W</div>
+    </div>
+    <div class="current-time" id="utc-time"></div>
+  </div>
+
+  <div id="map"></div>
+
+  <div class="weather-panel">
+    <div class="weather-main">
+      <div>
+        <div class="temperature">57.6°F</div>
+        <div class="condition">Partly Cloudy</div>
+      </div>
+    </div>
+    <div class="weather-details">
+      <div class="detail-item"><span class="detail-label">Wind</span><span class="detail-value">7.6 mph</span></div>
+      <div class="detail-item"><span class="detail-label">Precip</span><span class="detail-value">0.00 in</span></div>
+      <div class="detail-item"><span class="detail-label">Pressure</span><span class="detail-value">30.12 inHg</span></div>
+      <div class="detail-item"><span class="detail-label">Humidity</span><span class="detail-value">75%</span></div>
+    </div>
+    <div class="forecast">
+      <div class="forecast-day"><div>MON</div><div class="forecast-temp">55.9°</div></div>
+      <div class="forecast-day"><div>TUE</div><div class="forecast-temp">59.9°</div></div>
+      <div class="forecast-day"><div>WED</div><div class="forecast-temp">63.1°</div></div>
+      <div class="forecast-day"><div>THU</div><div class="forecast-temp">63.3°</div></div>
+      <div class="forecast-day"><div>FRI</div><div class="forecast-temp">64.0°</div></div>
+    </div>
+  </div>
+
+  <div class="radar-timestamp" id="radar-timestamp">Radar Updated: —</div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    const map = L.map('map', {
+      center: [32.0809, -81.0912],
+      zoom: 8,
+      zoomControl: false,
+      attributionControl: false,
+      dragging: false,
+      doubleClickZoom: false,
+      scrollWheelZoom: false,
+      boxZoom: false,
+      keyboard: false,
+      tap: false,
+      touchZoom: false
+    });
+
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      subdomains: 'abcd',
+      maxZoom: 19
+    }).addTo(map);
+
+    const radar = {
+      frames: [],
+      currentFrame: 0,
+      animationTimer: null,
+      activeLayer: null,
+      async loadFrames() {
+        try {
+          const response = await fetch('https://api.rainviewer.com/public/weather-maps.json');
+          const data = await response.json();
+          this.frames = [...data.radar.past, ...data.radar.nowcast];
+          if (!this.animationTimer) this.animate();
+          this.updateTimestamp();
+        } catch (error) {
+          console.error('Error loading radar:', error);
+        }
+      },
+      animate() {
+        const frame = this.frames[this.currentFrame];
+        if (frame) {
+          const newLayer = L.tileLayer(
+            `https://tilecache.rainviewer.com/v2/radar/${frame.time}/256/{z}/{x}/{y}/8/1_1.png`,
+            { opacity: 0.9, zIndex: 10 }
+          );
+          newLayer.addTo(map);
+          newLayer.getContainer().style.transition = 'opacity 0.3s ease-in-out';
+          if (this.activeLayer) map.removeLayer(this.activeLayer);
+          this.activeLayer = newLayer;
+          this.updateTimestamp();
+        }
+        this.currentFrame = (this.currentFrame + 1) % this.frames.length;
+        this.animationTimer = setTimeout(() => this.animate(), 500);
+      },
+      updateTimestamp() {
+        const frame = this.frames[this.currentFrame];
+        if (frame) {
+          const date = new Date(frame.time * 1000);
+          document.getElementById('radar-timestamp').textContent =
+            `Radar Updated: ${date.toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '')}`;
+        }
+      }
+    };
+
+    function updateUTCTime() {
+      const now = new Date();
+      document.getElementById('utc-time').textContent =
+        now.toISOString().replace('T', ' ').replace(/\.\d{3}Z$/, '');
+    }
+
+    radar.loadFrames();
+    updateUTCTime();
+    setInterval(() => radar.loadFrames(), 150000); // 2.5 min
+    setInterval(updateUTCTime, 1000);
+    window.addEventListener('beforeunload', () => clearTimeout(radar.animationTimer));
+  </script>
+</body>
+</html>
