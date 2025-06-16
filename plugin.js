@@ -10,7 +10,7 @@ windyInit({
 
     // 1. Set rain overlay
     store.set('overlay', 'rain');
-    store.set('level', 'surface');
+    store.set('level', 'rain');
     store.set('product', 'ecmwf');
 
     // 2. Enable dark mode
